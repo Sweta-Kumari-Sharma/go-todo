@@ -34,6 +34,8 @@
         <form id="todoForm">
             <label for="title">Title:</label>
             <input type="text" id="title" name="title">
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description">
             <button type="submit">Add Todo</button>
         </form>
 
@@ -43,7 +45,9 @@
                 <tr>
                     <th>ID</th>
                     <th>Title</th>
+                    <th>Description</th>
                     <th>Completed</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -82,11 +86,30 @@
                 
                 const idCell = row.insertCell(0);
                 const titleCell = row.insertCell(1);
-                const completedCell = row.insertCell(2);
-                
+                const descriptionCell = row.insertCell(2);
+                const completedCell = row.insertCell(3);
+                const actionsCell = row.insertCell(4);
+
                 idCell.textContent = todo.id;
                 titleCell.textContent = todo.title;
+                descriptionCell.textContent = todo.description || 'N/A';
                 completedCell.textContent = todo.completed ? 'Yes' : 'No';
+
+                // Create action buttons
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', function() {
+                    deleteTodo(todo.id);
+                });
+
+                const updateButton = document.createElement('button');
+                updateButton.textContent = 'Update';
+                updateButton.addEventListener('click', function() {
+                    updateTodoForm(todo);
+                });
+
+                actionsCell.appendChild(deleteButton);
+                actionsCell.appendChild(updateButton);
             });
         }
 
@@ -95,10 +118,12 @@
             event.preventDefault();
             
             const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
             
             if (title.trim() !== '') {
                 createTodo({
                     title: title,
+                    description: description,
                     completed: false
                 });
             }
@@ -127,7 +152,72 @@
             });
         }
 
-        // Initial fetch
+        // Delete a todo
+        function deleteTodo(todoId) {
+            fetch(`http://localhost:9000/todo/${todoId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                fetchTodos(); // Refresh the todo list
+            })
+            .catch(error => {
+                console.error('Error deleting todo:', error);
+            });
+        }
+
+        // Update todo form
+        function updateTodoForm(todo) {
+            // Populate form with todo data
+            document.getElementById('title').value = todo.title;
+            document.getElementById('description').value = todo.description || '';
+
+            // Update form action
+            document.getElementById('todoForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const updatedTitle = document.getElementById('title').value;
+                const updatedDescription = document.getElementById('description').value;
+                
+                if (updatedTitle.trim() !== '') {
+                    updateTodo(todo.id, {
+                        title: updatedTitle,
+                        description: updatedDescription,
+                        completed: todo.completed
+                    });
+                }
+            });
+        }
+
+        // Update todo
+        function updateTodo(todoId, updatedData) {
+            fetch(`http://localhost:9000/todo/${todoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedData),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                fetchTodos(); // Refresh the todo list
+            })
+            .catch(error => {
+                console.error('Error updating todo:', error);
+            });
+        }
+
+        // Fetch todos on page load
         fetchTodos();
 
     </script>

@@ -32,17 +32,19 @@ const (
 
 type (
 	todoModel struct {
-		ID        primitive.ObjectID `bson:"_id,omitempty"`
-		Title     string             `bson:"title"`
-		Completed bool               `bson:"completed"`
-		CreatedAt time.Time          `bson:"createdAt"`
+		ID          primitive.ObjectID `bson:"_id,omitempty"`
+		Title       string             `bson:"title"`
+		Description string             `bson:"description,omitempty"`
+		Completed   bool               `bson:"completed"`
+		CreatedAt   time.Time          `bson:"createdAt"`
 	}
 
 	todo struct {
-		ID        string    `json:"id"`
-		Title     string    `json:"title"`
-		Completed bool      `json:"completed"`
-		CreatedAt time.Time `json:"createdAt"`
+		ID          string    `json:"id"`
+		Title       string    `json:"title"`
+		Description string    `json:"description"`
+		Completed   bool      `json:"completed"`
+		CreatedAt   time.Time `json:"createdAt"`
 	}
 )
 
@@ -67,6 +69,38 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// Your implementation here
 }
 
+// func createTodo(w http.ResponseWriter, r *http.Request) {
+// 	var t todo
+
+// 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	if t.Title == "" {
+// 		http.Error(w, "The title field is required", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	tm := todoModel{
+// 		ID:        primitive.NewObjectID(),
+// 		Title:     t.Title,
+// 		Completed: false,
+// 		CreatedAt: time.Now(),
+// 	}
+
+// 	_, err := collection.InsertOne(context.TODO(), tm)
+// 	if err != nil {
+// 		http.Error(w, "Failed to save todo", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	json.NewEncoder(w).Encode(map[string]interface{}{
+// 		"message": "Todo created successfully",
+// 		"todo_id": tm.ID.Hex(),
+// 	})
+// }
+
 func createTodo(w http.ResponseWriter, r *http.Request) {
 	var t todo
 
@@ -81,10 +115,11 @@ func createTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tm := todoModel{
-		ID:        primitive.NewObjectID(),
-		Title:     t.Title,
-		Completed: false,
-		CreatedAt: time.Now(),
+		ID:          primitive.NewObjectID(),
+		Title:       t.Title,
+		Description: t.Description, // Added description here
+		Completed:   false,
+		CreatedAt:   time.Now(),
 	}
 
 	_, err := collection.InsertOne(context.TODO(), tm)
@@ -119,7 +154,7 @@ func updateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	oid, _ := primitive.ObjectIDFromHex(id)
-	_, err := collection.UpdateOne(context.TODO(), bson.M{"_id": oid}, bson.M{"$set": bson.M{"title": t.Title, "completed": t.Completed}})
+	_, err := collection.UpdateOne(context.TODO(), bson.M{"_id": oid}, bson.M{"$set": bson.M{"title": t.Title, "description": t.Description, "completed": t.Completed}})
 	if err != nil {
 		http.Error(w, "Failed to update todo", http.StatusInternalServerError)
 		return
@@ -183,7 +218,7 @@ func deleteTodo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func main() {
+func init() {
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 
