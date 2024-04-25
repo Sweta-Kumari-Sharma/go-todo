@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Todo List</h1>
+
+        <!-- Form to create new todo -->
+        <form id="todoForm">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title">
+            <button type="submit">Add Todo</button>
+        </form>
+
+        <!-- Display todos in a table -->
+        <table id="todoTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Todos will be displayed here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Fetch todos from API
+        function fetchTodos() {
+            fetch('http://localhost:9000/todo')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                populateTable(data.data);
+            })
+            .catch(error => {
+                console.error('Error fetching todos:', error);
+            });
+        }
+
+        // Populate the table with todos
+        function populateTable(todos) {
+            const tableBody = document.getElementById('todoTable').getElementsByTagName('tbody')[0];
+            
+            // Clear existing rows
+            tableBody.innerHTML = '';
+
+            todos.forEach(todo => {
+                const row = tableBody.insertRow();
+                
+                const idCell = row.insertCell(0);
+                const titleCell = row.insertCell(1);
+                const completedCell = row.insertCell(2);
+                
+                idCell.textContent = todo.id;
+                titleCell.textContent = todo.title;
+                completedCell.textContent = todo.completed ? 'Yes' : 'No';
+            });
+        }
+
+        // Handle form submission to create a new todo
+        document.getElementById('todoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            
+            if (title.trim() !== '') {
+                createTodo({
+                    title: title,
+                    completed: false
+                });
+            }
+        });
+
+        // Create a new todo
+        function createTodo(todoData) {
+            fetch('http://localhost:9000/todo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(todoData),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                fetchTodos(); // Refresh the todo list
+            })
+            .catch(error => {
+                console.error('Error creating todo:', error);
+            });
+        }
+
+        // Initial fetch
+        fetchTodos();
+
+    </script>
+</body>
+</html>
